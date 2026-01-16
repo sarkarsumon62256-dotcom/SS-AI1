@@ -1,0 +1,392 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SS AI </title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #00f3ff;
+            --accent: #ffd700;
+            --bg: #050505;
+            --card-bg: #0f0f13;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* SIDEBAR ANIMATION */
+        .sidebar { transition: transform 0.3s ease-in-out; }
+        .closed { transform: translateX(-100%); }
+        .open { transform: translateX(0); }
+
+        /* LOADING SCANNER */
+        .scan-card {
+            background: #111;
+            border: 1px solid #333;
+            overflow: hidden;
+            position: relative;
+        }
+        .scanner-beam {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 5px;
+            background: var(--primary);
+            box-shadow: 0 0 15px var(--primary);
+            animation: scan 1.5s infinite linear;
+        }
+        @keyframes scan { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+
+        /* SCROLLBAR HIDE */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="flex flex-col relative">
+
+    <div id="backdrop" onclick="toggleMenu()" class="fixed inset-0 bg-black/80 z-40 hidden backdrop-blur-sm transition-opacity"></div>
+    <aside id="sidebar" class="fixed top-0 left-0 h-full w-80 bg-[#0a0a0e] border-r border-slate-800 z-50 sidebar closed flex flex-col shadow-2xl">
+        
+        <div class="h-20 flex items-center px-6 border-b border-slate-800 bg-black/20">
+            <i class="fa-solid fa-layer-group text-3xl text-[var(--primary)] mr-3"></i>
+            <div>
+                <h1 class="font-['Orbitron'] font-bold text-xl tracking-wider">SS AI </h1>
+                <p class="text-[10px] text-slate-400">HISTORY & SAVED DATA</p>
+            </div>
+        </div>
+
+        <div class="p-4 border-b border-slate-800">
+            <button onclick="createNewProject()" class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-[var(--primary)] text-black font-bold hover:bg-cyan-400 transition shadow-[0_0_15px_rgba(0,243,255,0.3)]">
+                <i class="fa-solid fa-plus-square"></i> New Project
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-2 no-scrollbar">
+            <div class="text-xs font-bold text-slate-500 px-2 py-2 uppercase tracking-widest">Saved Gallery</div>
+            <div id="history-container" class="space-y-2">
+                </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-800 text-center">
+            <button onclick="clearAllData()" class="text-xs text-red-500 hover:text-red-400 flex items-center justify-center gap-2 w-full">
+                <i class="fa-solid fa-trash"></i> Clear All History
+            </button>
+        </div>
+    </aside>
+
+    <header class="h-16 flex items-center justify-between px-4 fixed top-0 w-full bg-[#050505]/90 backdrop-blur-md z-30 border-b border-white/5">
+        <button onclick="toggleMenu()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition">
+            <i class="fa-solid fa-bars text-xl text-white"></i>
+        </button>
+        <span class="font-['Orbitron'] font-bold text-lg tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white">SS STUDIO</span>
+        <div class="w-10 text-right">
+            <span id="img-count" class="text-xs font-bold text-[var(--primary)] border border-cyan-900 px-2 py-1 rounded">0</span>
+        </div>
+    </header>
+
+    <main class="flex-1 pt-20 pb-36 px-3 overflow-y-auto no-scrollbar" id="main-feed">
+        
+        <div id="welcome-msg" class="h-[60vh] flex flex-col items-center justify-center text-center opacity-70">
+            <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-cyan-900 to-transparent flex items-center justify-center mb-4 border border-cyan-500/30">
+                <i class="fa-solid fa-folder-open text-3xl text-[var(--primary)]"></i>
+            </div>
+            <h2 class="text-2xl font-bold font-['Orbitron'] text-white">SS AI</h2>
+            <p class="text-sm text-slate-400 mt-2">SS AI Free Images generated .</p>
+        </div>
+
+        <div id="grid-container" class="grid grid-cols-2 gap-2 pb-10"></div>
+    </main>
+
+    <div class="fixed bottom-0 left-0 w-full bg-[#0a0a0f]/95 backdrop-blur-xl border-t border-white/10 p-3 z-30 pb-6 md:pb-4">
+        <div class="max-w-2xl mx-auto flex flex-col gap-3">
+            
+            <div class="flex justify-center gap-2">
+                <button onclick="setSize('1:1', this)" class="size-btn active-btn bg-cyan-500/20 text-cyan-400 border border-cyan-500 text-[10px] font-bold px-4 py-1.5 rounded-full transition">1:1 Square</button>
+                <button onclick="setSize('16:9', this)" class="size-btn bg-slate-800 text-slate-400 border border-slate-700 text-[10px] font-bold px-4 py-1.5 rounded-full transition">16:9 YouTube</button>
+                <button onclick="setSize('9:16', this)" class="size-btn bg-slate-800 text-slate-400 border border-slate-700 text-[10px] font-bold px-4 py-1.5 rounded-full transition">9:16 Story</button>
+            </div>
+
+            <div class="flex items-center gap-2 bg-[#15151a] border border-slate-700 p-1.5 rounded-2xl shadow-lg focus-within:border-[var(--primary)] transition">
+                <input type="text" id="prompt-in" class="flex-1 bg-transparent text-white px-3 py-3 text-sm focus:outline-none placeholder-slate-500" placeholder="Describe your image..." autocomplete="off">
+                <button onclick="generateImage()" id="gen-btn" class="w-12 h-12 bg-gradient-to-br from-[var(--primary)] to-blue-600 rounded-xl flex items-center justify-center text-black shadow-lg shadow-cyan-500/30 active:scale-95 transition">
+                    <i class="fa-solid fa-bolt text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="viewer" class="fixed inset-0 bg-black z-50 hidden flex-col">
+        <div class="h-16 flex items-center justify-between px-4 absolute top-0 w-full z-10 bg-gradient-to-b from-black/80 to-transparent">
+            <button onclick="closeViewer()" class="w-10 h-10 rounded-full bg-white/10 backdrop-blur text-white"><i class="fa-solid fa-arrow-left"></i></button>
+            <span class="text-xs font-['Orbitron'] tracking-widest text-slate-300">PREVIEW</span>
+            <div class="w-10"></div>
+        </div>
+
+        <div class="flex-1 flex items-center justify-center bg-[#050505] p-2 relative">
+            <img id="viewer-img" src="" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg">
+        </div>
+
+        <div class="bg-[#111] p-5 rounded-t-3xl border-t border-slate-800 pb-8">
+            <h3 id="viewer-prompt" class="text-white text-sm font-bold truncate mb-4 px-1">Prompt Name</h3>
+            <div class="flex gap-3">
+                <button onclick="downloadWithWatermark()" id="dl-btn" class="flex-1 bg-[var(--primary)] text-black py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,243,255,0.2)]">
+                    <i class="fa-solid fa-download"></i> Save
+                </button>
+                <button onclick="shareImage()" id="sh-btn" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 border border-slate-700">
+                    <i class="fa-solid fa-share-nodes"></i> Share
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="wm-canvas" style="display:none;"></canvas>
+
+    <script>
+        // --- STORAGE KEY ---
+        const DB_KEY = 'ss_ai_projects_v2';
+
+        // --- DOM ELEMENTS ---
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('backdrop');
+        const grid = document.getElementById('grid-container');
+        const historyContainer = document.getElementById('history-container');
+        const welcome = document.getElementById('welcome-msg');
+        const promptIn = document.getElementById('prompt-in');
+        const imgCount = document.getElementById('img-count');
+        const viewer = document.getElementById('viewer');
+        const viewerImg = document.getElementById('viewer-img');
+        const viewerPrompt = document.getElementById('viewer-prompt');
+
+        let currentSize = { w: 1024, h: 1024 };
+        let currentImgData = null; // { url, prompt }
+
+        // --- INITIALIZE ---
+        window.onload = () => {
+            loadHistory();
+        };
+
+        // --- 1. MENU & PROJECT LOGIC ---
+        function toggleMenu() {
+            sidebar.classList.toggle('closed');
+            sidebar.classList.toggle('open');
+            backdrop.classList.toggle('hidden');
+        }
+
+        function createNewProject() {
+            // Clears the "Live View" but keeps data in history sidebar
+            grid.innerHTML = '';
+            welcome.style.display = 'flex';
+            toggleMenu();
+            // Just a visual reset for a new session
+            alert("New Workspace Ready! Previous images are saved in History.");
+        }
+
+        // --- 2. STORAGE SYSTEM (Persistent) ---
+        function saveImageToStorage(url, prompt) {
+            const data = {
+                id: Date.now(),
+                url: url,
+                prompt: prompt,
+                date: new Date().toLocaleDateString()
+            };
+
+            let history = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+            history.unshift(data); // Add to top
+            localStorage.setItem(DB_KEY, JSON.stringify(history));
+            
+            // Reload sidebar
+            loadHistory();
+        }
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+            historyContainer.innerHTML = '';
+            imgCount.innerText = history.length;
+
+            if(history.length === 0) {
+                historyContainer.innerHTML = '<div class="text-xs text-slate-600 text-center p-4">No saved projects yet.</div>';
+                return;
+            }
+
+            history.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-3 p-2 rounded-lg bg-[#15151a] border border-slate-800 hover:border-cyan-500/50 cursor-pointer transition group";
+                div.onclick = () => openViewer(item.url, item.prompt);
+                
+                div.innerHTML = `
+                    <img src="${item.url}" class="w-10 h-10 rounded object-cover bg-slate-900">
+                    <div class="overflow-hidden">
+                        <p class="text-xs text-slate-300 font-bold truncate group-hover:text-cyan-400">${item.prompt}</p>
+                        <p class="text-[10px] text-slate-600">${item.date}</p>
+                    </div>
+                `;
+                historyContainer.appendChild(div);
+            });
+        }
+
+        function clearAllData() {
+            if(confirm("Delete all saved images history?")) {
+                localStorage.removeItem(DB_KEY);
+                loadHistory();
+                grid.innerHTML = '';
+                welcome.style.display = 'flex';
+                toggleMenu();
+            }
+        }
+
+        // --- 3. GENERATION LOGIC ---
+        function setSize(ratio, btn) {
+            document.querySelectorAll('.size-btn').forEach(b => {
+                b.className = "size-btn bg-slate-800 text-slate-400 border border-slate-700 text-[10px] font-bold px-4 py-1.5 rounded-full transition";
+            });
+            btn.className = "size-btn bg-cyan-500/20 text-cyan-400 border border-cyan-500 text-[10px] font-bold px-4 py-1.5 rounded-full transition";
+            
+            if(ratio === '1:1') { currentSize.w = 1024; currentSize.h = 1024; }
+            if(ratio === '16:9') { currentSize.w = 1280; currentSize.h = 720; }
+            if(ratio === '9:16') { currentSize.w = 720; currentSize.h = 1280; }
+        }
+
+        function generateImage() {
+            const prompt = promptIn.value.trim();
+            if (!prompt) return;
+
+            welcome.style.display = 'none';
+            promptIn.value = '';
+            promptIn.blur();
+
+            // Create Loader
+            const cardId = Date.now();
+            const card = document.createElement('div');
+            card.className = "scan-card aspect-square rounded-xl flex flex-col items-center justify-center p-4";
+            card.id = `card-${cardId}`;
+            card.innerHTML = `
+                <div class="scanner-beam"></div>
+                <div class="text-[var(--primary)] text-sm font-bold z-10">GENERATING...</div>
+                <div class="text-[9px] text-slate-500 mt-1">SS AI....</div>
+            `;
+            grid.prepend(card);
+
+            // Enhance Prompt
+            const finalPrompt = prompt + ", high quality, 8k, detailed, masterpiece";
+            const seed = Math.floor(Math.random() * 999999);
+            const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalPrompt)}?width=${currentSize.w}&height=${currentSize.h}&seed=${seed}&nologo=true&model=flux`;
+
+            const img = new Image();
+            img.src = url;
+            img.onload = () => {
+                // Remove Loader, Show Image
+                const loadedCard = document.getElementById(`card-${cardId}`);
+                loadedCard.classList.remove('scan-card');
+                loadedCard.className = "relative rounded-xl overflow-hidden aspect-square group bg-black border border-slate-800";
+                
+                loadedCard.innerHTML = `
+                    <img src="${url}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition cursor-pointer" onclick="openViewer('${url}', '${prompt.replace(/'/g, "\\'")}')"></div>
+                `;
+
+                // SAVE TO STORAGE
+                saveImageToStorage(url, prompt);
+            };
+            img.onerror = () => {
+                document.getElementById(`card-${cardId}`).remove();
+                alert("Generation Failed.");
+            };
+        }
+
+        // --- 4. VIEWER & WATERMARK ---
+        function openViewer(url, prompt) {
+            currentImgData = { url, prompt };
+            viewerImg.src = url;
+            viewerPrompt.innerText = prompt || "SS AI";
+            viewer.classList.remove('hidden');
+            viewer.classList.add('flex');
+        }
+
+        function closeViewer() {
+            viewer.classList.add('hidden');
+            viewer.classList.remove('flex');
+        }
+
+        async function downloadWithWatermark() {
+            if (!currentImgData) return;
+            const btn = document.getElementById('dl-btn');
+            const oldText = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+            
+            try {
+                const blob = await createWatermarkedBlob(currentImgData.url);
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `SS_AI_${Date.now()}.jpg`;
+                a.click();
+            } catch (e) {
+                alert("Save Failed");
+            }
+            btn.innerHTML = oldText;
+        }
+
+        async function shareImage() {
+            if (!currentImgData) return;
+            const btn = document.getElementById('sh-btn');
+            const oldText = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+
+            try {
+                const blob = await createWatermarkedBlob(currentImgData.url);
+                const file = new File([blob], "ss_ai_art.jpg", { type: "image/jpeg" });
+                if (navigator.share) {
+                    await navigator.share({ files: [file], title: "Created with SS AI" });
+                } else {
+                    alert("Share not supported. Image saved instead.");
+                }
+            } catch (e) { console.error(e); }
+            btn.innerHTML = oldText;
+        }
+
+        // Helper: Create Watermark Canvas
+        async function createWatermarkedBlob(url) {
+            const canvas = document.getElementById('wm-canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = url;
+            
+            await new Promise(r => img.onload = r);
+            
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            // Gradient & Text
+            const gradient = ctx.createLinearGradient(0, img.height * 0.85, 0, img.height);
+            gradient.addColorStop(0, "rgba(0,0,0,0)");
+            gradient.addColorStop(1, "rgba(0,0,0,1)");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, img.height * 0.85, img.width, img.height * 0.15);
+
+            const size = Math.max(24, img.width * 0.04);
+            ctx.font = `900 ${size}px 'Orbitron', sans-serif`;
+            ctx.textAlign = "right";
+            
+            ctx.shadowColor = "#00f3ff"; ctx.shadowBlur = 10;
+            ctx.fillStyle = "#00f3ff";
+            ctx.fillText("SS AI", img.width - (size * 3.2), img.height - (size * 0.8));
+            
+            ctx.shadowColor = "#ffd700";
+            ctx.fillStyle = "#ffd700";
+            ctx.fillText("BRAND", img.width - (size * 0.5), img.height - (size * 0.8));
+
+            return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+        }
+    </script>
+</body>
+</html>
